@@ -31,12 +31,35 @@ socket.on('DANH_SACH_ONLINE', o => {
     })
 });
 
-socket.on('DANG_KY_THAT_BAI', () => alert('Vui long chon username khac!'));
+socket.on('DANG_KY_THAT_BAI', () => alert('Vui lòng chọn username khác!'));
+
+let localStream;  // Biến để lưu stream local
 
 function openStream() {
     const config = { audio: true, video: true };
-    return navigator.mediaDevices.getUserMedia(config);
+    return navigator.mediaDevices.getUserMedia(config).then(stream => {
+        localStream = stream;  // Lưu stream để có thể bật/tắt sau này
+        return stream;
+    });
 }
+
+// Thêm sự kiện cho nút tắt/mở camera
+$('#btnToggleCamera').click(() => {
+    if (localStream) {
+        const videoTrack = localStream.getVideoTracks()[0];
+        videoTrack.enabled = !videoTrack.enabled; // Bật/tắt camera
+        $('#btnToggleCamera').text(videoTrack.enabled ? 'Tắt Camera' : 'Mở Camera');
+    }
+});
+
+// Thêm sự kiện cho nút tắt/mở mic
+$('#btnToggleMic').click(() => {
+    if (localStream) {
+        const audioTrack = localStream.getAudioTracks()[0];
+        audioTrack.enabled = !audioTrack.enabled; // Bật/tắt mic
+        $('#btnToggleMic').text(audioTrack.enabled ? 'Tắt Mic' : 'Mở Mic');
+    }
+});
 
 function playStream(idVideoTag, stream) {
     const video = document.getElementById(idVideoTag);
@@ -55,6 +78,8 @@ peer.on('open', id => {
         const username = $('#txtUsername').val();
         if (username != null && username != "") {
             socket.emit('NGUOI_DUNG_DANG_KY', { ten: username, peerID: id });
+        } else {
+            alert('Username không thể bỏ trống!');
         }
     });
 });
@@ -97,5 +122,7 @@ $('#btnSend').click(() => {
         document.getElementById("yourMessage").value = "";
         document.getElementById("messages").textContent += "YOU: " + message + "\n";
         socket.emit("GUI_TIN_NHAN", {username: username, message: message});
+    } else {
+        alert('Tin nhắn không thể bỏ trống!');
     }
 });
